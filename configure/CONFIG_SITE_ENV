@@ -45,8 +45,9 @@
 #	              EU: Mar 28 - Oct 31
 #	(see: http://www.timeanddate.com/time/dst/2016.html etc. )
 #
-# These values are for 2016:
-EPICS_TIMEZONE=CUS::360:031302:110602
+# These values are for 2011:
+EPICS_TIMEZONE=HST::600:0:0
+TZ=HST10
 #EPICS_TIMEZONE=MET::-60:032702:103002
 
 # EPICS_TS_NTP_INET
