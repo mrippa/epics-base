@@ -1,0 +1,56 @@
+#CONFIG.Gem
+
+# Define client configuration install location, and generate CLIENT_CFG targets
+INSTALL_DATA = $(INSTALL_LOCATION)/data
+INSTALL_DATAS = $(DATA:%= $(INSTALL_DATA)/%)
+
+# Define some boot flags for startup script substitutions
+vxWorks_ONLY="\# Commented out VxWorks command: "
+Linux_ONLY=  "\# Commented out Linux command: "
+RTEMS_ONLY=  "\# Commented out RTEMS command: "
+$(OS_CLASS)_ONLY=
+
+# Define a NULL file depending on the OS
+DEV_NULL=/dev/null
+ifeq ($(EPICS_HOST_ARCH),win32-x86)
+	DEV_NULL=NUL:
+endif
+
+# Default tdct configuration file location is Db directory
+ifndef TDCT_CFG
+	TDCT_CFG=../tdct.cfg
+endif
+
+SYS_BOOT_FLAGS =  -MARCH=$(T_A) $(shell $(PERL) $(EPICS_BASE_HOST_BIN)/convertGemRelease.pl -T$(TOP) msiPaths)
+SYS_BOOT_FLAGS += -MVXWORKS_ONLY=$(vxWorks_ONLY)
+SYS_BOOT_FLAGS += -MLINUX_ONLY=$(Linux_ONLY)
+SYS_BOOT_FLAGS += -MRTEMS_ONLY=$(RTEMS_ONLY)
+
+# Next lines use convertGemRelease Perl script to create lists of paths for use in build rules
+SYS_MSI_INCLUDES += $(shell $(PERL) $(EPICS_BASE_HOST_BIN)/convertGemRelease.pl -T$(TOP) msiIncludes)
+SYS_DB_PATHS += $(shell $(PERL) $(EPICS_BASE_HOST_BIN)/convertGemRelease.pl -T$(TOP) dbPaths)
+#Env variable $SYS_TDCT_PATHS is used as the TDCT symbol files search path [epicslib] in tdct.cfg
+# Use $SYS_DB_PATHS. First strip leading/trailing spaces and set the path separator to be ':'
+TDCT_PATHS1 = $(strip $(SYS_DB_PATHS))
+colon:= :
+empty:=  
+space:= $(empty) $(empty)
+TDCT_PATHS2 = $(subst $(space),$(colon),$(TDCT_PATHS1))
+# Export this as an environment variable, having added the standard TDCT symbol library location
+export SYS_TDCT_PATHS = $(TDCT_PATHS2):$(EPICS)/extensions/src/tdct/sym
+$(info $$SYS_TDCT_PATHS is [${SYS_TDCT_PATHS}])
+
+SYS_SCH_PATHS += $(shell $(PERL) $(EPICS_BASE_HOST_BIN)/convertGemRelease.pl -T$(TOP) schPaths)
+#Env variable $TDCT_SCH_PATHS is used as the TDCT template schematics files search path [userpath] in tdct.cfg
+# Use $SYS_SCH_PATHS. First strip leading/trailing spaces and set the path separator to be ':'
+TDCT_SCH_PATHS1 = $(strip $(SYS_SCH_PATHS))
+colon:= :
+empty:=  
+space:= $(empty) $(empty)
+TDCT_SCH_PATHS2 = $(subst $(space),$(colon),$(TDCT_SCH_PATHS1))
+# Export this as an environment variable
+export TDCT_SCH_PATHS = $(TDCT_SCH_PATHS2)
+$(info $$TDCT_SCH_PATHS is [${TDCT_SCH_PATHS}])
+
+# SYS_MSI_DATA_INCLUDES += $(shell $(PERL) $(EPICS_BASE_HOST_BIN)/convertDlsRelease.pl -T$(TOP) msiDataIncludes)
+# SYS_EDM_PATHS +=  .:$(shell $(PERL) $(EPICS_BASE_HOST_BIN)/convertDlsRelease.pl -T$(TOP) dataPaths)
