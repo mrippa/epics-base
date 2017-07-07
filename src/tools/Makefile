@@ -17,6 +17,7 @@ PERL_MODULES += EPICS/Release.pm
 PERL_MODULES += EPICS/Getopts.pm
 
 PERL_SCRIPTS += convertRelease.pl
+PERL_SCRIPTS += convertGemRelease.pl
 PERL_SCRIPTS += cvsclean.pl
 PERL_SCRIPTS += dos2unix.pl
 PERL_SCRIPTS += expandVars.pl
