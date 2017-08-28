@@ -10,13 +10,22 @@
 # 
 # Build all scripts
 TARGETS+=$(SCRIPTS)
+AUTOSAVE_DIR=autosave
 
 ifdef T_A
 buildInstall: $(INSTALL_DATAS)
 
+$(INSTALL_DATA)/%.sav: ../%.sav
+	@echo "Install autosav file $@ to data/autosave for $< ..."
+	@$(INSTALL) -d -m 555 $< $(INSTALL_DATA)/$(AUTOSAVE_DIR)
+
+$(INSTALL_DATA)/%.proc: ../%.proc
+	@echo "Install PROC_File $@ to data for $< ..."
+	@$(INSTALL) -d -m 555 $< $(INSTALL_DATA)
+
 # Install client configurations
 $(INSTALL_DATA)/%: ../%
-	@echo "Installing script $@"
+	@echo "Installing my script $@"
 	@$(INSTALL) -d -m 555 $< $(INSTALL_DATA)
 
 # Also allow auto-generated data to be copied
