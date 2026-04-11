@@ -18,13 +18,16 @@ void testHookNames(void)
 {
     const char* s;
 
+    s = initHookName(initHookAfterNtpTimeSync);
+    testOk(strcmp(s, "initHookAfterNtpTimeSync")==0, "'%s' == 'initHookAfterNtpTimeSync'", s);
+
     s = initHookName(initHookAtEnd);
     testOk(strcmp(s, "initHookAtEnd")==0, "'%s' == 'initHookAtEnd'", s);
 }
 
 MAIN(initHookTest)
 {
-    testPlan(1);
+    testPlan(2);
     testHookNames();
     return testDone();
 }

@@ -7,7 +7,7 @@
 EXE = .elf
 RTEMS_BSP = beatnik
 RTEMS_TARGET_CPU = powerpc
-GNU_TARGET = powerpc-rtems
+GNU_TARGET = powerpc-rtems6
 # optimization trouble in postfix.c
 ARCH_DEP_CFLAGS += -DRTEMS_HAS_ALTIVEC
 #will use bootp

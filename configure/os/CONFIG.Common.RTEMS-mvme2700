@@ -1,6 +1,7 @@
 #
 # Author: Matt Rippa
 #
+GNU_TARGET = powerpc-rtems6
 RTEMS_TARGET_CPU = powerpc
 ARCH_DEP_CFLAGS += -DMY_DO_BOOTP=NULL
 ARCH_DEP_CFLAGS += -DHAVE_PPCBUG
@@ -23,7 +24,9 @@ endef
 
 include $(CONFIG)/os/CONFIG.Common.RTEMS
 
-ifeq ($(shell test $(RTEMS_VERSION) -ge 5; echo $$?),0)
+ifeq ($(shell test -n "$(RTEMS_VERSION)" && test $(RTEMS_VERSION) -ge 5; echo $$?),0)
+RTEMS_BSP = mvme2700
+else ifneq ($(findstring rtems6,$(GNU_TARGET)),)
 RTEMS_BSP = mvme2700
 else
 RTEMS_BSP = mvme2307
