@@ -94,6 +94,7 @@ typedef enum {
     initHookAfterDatabaseRunning,   /**< Scan tasks and CA links running */
     initHookAfterCaServerRunning,   /**< RSRV running */
     initHookAfterIocRunning,        /**< End of iocRun() / iocInit() */
+    initHookAfterNtpTimeSync,       /**< First NTP-synchronized time available (currently RTEMS-posix only) */
     // iocInit() or iocRun() ends
 
     // iocPause() begins

@@ -33,6 +33,7 @@
 
 #include <rtems.h>
 
+#define __RTEMS_MAJOR__ 6
 /*
  * This file is built automatically by EPICS's build system
  */
@@ -154,6 +155,7 @@ static struct {
     char         config_ip[32];
     int          active;
     int          synchronized;
+    int          sync_hook_announced;
     int          ntpd_active;
     int          ntpd_active_secs;
     int          ntpd_finished;
@@ -256,9 +258,20 @@ static bool osdNTP_Synchronized(void)
 
 static void osdNTP_Set_Synchronized(int synchronized)
 {
+    bool announce_hook = false;
+
     epicsMutexMustLock(osdNTPPvt.lock);
+    if (synchronized && !osdNTPPvt.synchronized &&
+        !osdNTPPvt.sync_hook_announced) {
+        osdNTPPvt.sync_hook_announced = 1;
+        announce_hook = true;
+    }
     osdNTPPvt.synchronized = synchronized;
     epicsMutexUnlock(osdNTPPvt.lock);
+
+    if (announce_hook) {
+        initHookAnnounce(initHookAfterNtpTimeSync);
+    }
 }
 
 static bool osdNTP_Update_ActiveSecs(int secs)
@@ -292,6 +305,7 @@ static void osdNTP_InitOnce(void *not_used)
     osdNTPPvt.config_source    = NTPD_CONFIG_NONE;
     osdNTPPvt.active           = 1;
     osdNTPPvt.synchronized     = 0;
+    osdNTPPvt.sync_hook_announced = 0;
     osdNTPPvt.ntpd_active      = 1;
     osdNTPPvt.ntpd_active_secs = 0;
     osdNTPPvt.ntpd_finished    = 0;

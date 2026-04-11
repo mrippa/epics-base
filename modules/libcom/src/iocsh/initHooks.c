@@ -133,6 +133,7 @@ const char *initHookName(int state)
         "initHookAfterDatabaseRunning",
         "initHookAfterCaServerRunning",
         "initHookAfterIocRunning",
+        "initHookAfterNtpTimeSync",
 
         "initHookAtIocPause",
         "initHookAfterCaServerPaused",
