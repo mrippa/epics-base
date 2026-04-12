@@ -99,6 +99,53 @@ MODEXT=.obj
 OS_CLASS = RTEMS
 
 #--------------------------------------------------
+# RTEMS init-configuration file packaging interface
+#
+# These variables define the EPICS-side build interface for files that must be
+# available before normal IOC startup.  The mapped host-side files are expected
+# to be generated under O.$(T_A) from build, site, or application variables.
+# These definitions are intentionally undefined until rules are added to generate,
+# stage, and package the mapped files.
+#
+# RTEMS_INITCFG_ENABLE
+#   Enables this interface for a target.  Targets or sites that do not need
+#   generated early-init configuration files should leave this as NO.
+#
+# RTEMS_INITCFG_MAPPINGS
+#   List of host-path:target-path pairs.  Each host-side file is staged and
+#   packaged so that it appears at the given target path in the runtime IMFS.
+#   Example:
+#     $(RTEMS_MVME2700_RC_CONF):/etc/rc.conf
+#   maps a generated host-side rc.conf file to /etc/rc.conf on the target.
+#
+# RTEMS_INITCFG_GEN_ROOT
+#   Per-target object-directory root for generated host-side configuration
+#   files, for example a generated rc.conf.  For this prototype the default is
+#   the local module build directory O.$(T_A).
+#
+# RTEMS_INITCFG_GEN_FILES
+#   List of generated host-side configuration files that must be created before
+#   staging and packaging.  Targets can add generated outputs here.
+#
+# RTEMS_INITCFG_STAGING_ROOT
+#   Per-target object-directory root for the staged target-shaped file tree
+#   that will later be packaged for inclusion in the RTEMS image.
+#
+# RTEMS_INITCFG_TAR
+#   Path to the packaged archive artifact produced from
+#   RTEMS_INITCFG_STAGING_ROOT.
+#
+# RTEMS_INITCFG_TAR_CMD
+#   Host-side tar tool used to package RTEMS_INITCFG_STAGING_ROOT.
+RTEMS_INITCFG_ENABLE ?= NO
+RTEMS_INITCFG_MAPPINGS ?=
+RTEMS_INITCFG_GEN_ROOT ?= O.$(T_A)/rtems-initcfg-gen
+RTEMS_INITCFG_GEN_FILES ?=
+RTEMS_INITCFG_STAGING_ROOT ?= O.$(T_A)/rtems-initcfg
+RTEMS_INITCFG_TAR ?= $(RTEMS_INITCFG_STAGING_ROOT).tar
+RTEMS_INITCFG_TAR_CMD ?= tar
+
+#--------------------------------------------------
 # Operating system compile & link flags
 OP_SYS_CFLAGS += -D__LINUX_ERRNO_EXTENSIONS__
 
@@ -227,3 +274,49 @@ LDLIBS_READLINE = -lreadline -lncurses
 #--------------------------------------------------
 # Allow site overrides
 -include $(CONFIG)/os/CONFIG_SITE.$(EPICS_HOST_ARCH).RTEMS
+
+#--------------------------------------------------
+# Generic RTEMS init-configuration packaging rule
+#
+# This rule lives here only as a prototype while the interface is being worked
+# out.  If the mechanism is adopted more broadly it should probably move into a
+# dedicated RULES file so CONFIG.Common.RTEMS remains mostly variable
+# definitions.
+#
+# Stage all mapped files into a target directory tree under
+# RTEMS_INITCFG_STAGING_ROOT, then package that tree as RTEMS_INITCFG_TAR.
+# In short:
+#   1. build generated host-side config files
+#   2. apply each host-path:target-path mapping into the staging tree
+#   3. package the staged tree as a tarball for later image packaging
+
+ifeq ($(RTEMS_INITCFG_ENABLE),YES)
+RTEMS_INITCFG_HOST_FILES = $(foreach map,$(RTEMS_INITCFG_MAPPINGS),$(word 1,$(subst :, ,$(map))))
+CLEANS += $(RTEMS_INITCFG_TAR) $(RTEMS_INITCFG_GEN_FILES)
+
+.PHONY: rtems-initcfg
+rtems-initcfg: $(RTEMS_INITCFG_TAR)
+
+$(RTEMS_INITCFG_TAR): $(RTEMS_INITCFG_GEN_FILES) $(RTEMS_INITCFG_HOST_FILES)
+	@$(RM) -r $(RTEMS_INITCFG_STAGING_ROOT)
+	@$(MKDIR) $(RTEMS_INITCFG_STAGING_ROOT)
+	@set -e; \
+	for map in $(RTEMS_INITCFG_MAPPINGS); do \
+	    src=$${map%%:*}; \
+	    dst=$${map#*:}; \
+	    $(MKDIR) "$(RTEMS_INITCFG_STAGING_ROOT)$${dst%/*}"; \
+	    $(INSTALL) -m $(INSTALL_PERMISSIONS) "$$src" "$(RTEMS_INITCFG_STAGING_ROOT)$${dst%/*}"; \
+	done
+	@cd $(RTEMS_INITCFG_STAGING_ROOT) && $(RTEMS_INITCFG_TAR_CMD) -cf "$(abspath $@)" .
+endif
+
+
+### I couldn't get this rule to work inside CONFIG.Common.RTEMS-mvme2700
+#   The make rule craziness is something to figure out...
+#   This just sets up the directory structure dynamicly at build time.
+#   TODO: improve the comments here...
+$(RTEMS_MVME2700_RC_CONF):
+	@$(MKDIR) $(dir $@)
+	@$(RM) $@
+	@echo "# Generated mvme2700 RTEMS init configuration placeholder" > $@
+	@echo "# Replace or extend this rule with application or site policy." >> $@
