@@ -127,6 +127,11 @@ OS_CLASS = RTEMS
 #   List of generated host-side configuration files that must be created before
 #   staging and packaging.  Targets can add generated outputs here.
 #
+# RTEMS_INITCFG_GEN_DEPS
+#   Additional dependency inputs for RTEMS_INITCFG_GEN_FILES.  Applications or
+#   sites can use this to invalidate generated early-init configuration files
+#   when policy inputs such as CONFIG_SITE change.
+#
 # RTEMS_INITCFG_STAGING_ROOT
 #   Per-target object-directory root for the staged target-shaped file tree
 #   that will later be packaged for inclusion in the RTEMS image.
@@ -139,11 +144,15 @@ OS_CLASS = RTEMS
 #   Host-side tar tool used to package RTEMS_INITCFG_STAGING_ROOT.
 RTEMS_INITCFG_ENABLE ?= NO
 RTEMS_INITCFG_MAPPINGS ?=
-RTEMS_INITCFG_GEN_ROOT ?= O.$(T_A)/rtems-initcfg-gen
+RTEMS_INITCFG_GEN_ROOT ?= rtems-initcfg-gen
 RTEMS_INITCFG_GEN_FILES ?=
-RTEMS_INITCFG_STAGING_ROOT ?= O.$(T_A)/rtems-initcfg
+RTEMS_INITCFG_GEN_DEPS ?=
+RTEMS_INITCFG_STAGING_ROOT ?= rtems-initcfg
 RTEMS_INITCFG_TAR ?= $(RTEMS_INITCFG_STAGING_ROOT).tar
 RTEMS_INITCFG_TAR_CMD ?= tar
+RTEMS_INITCFG_LEGACY_GEN_ROOT ?= O.$(T_A)/rtems-initcfg-gen
+RTEMS_INITCFG_LEGACY_STAGING_ROOT ?= O.$(T_A)/rtems-initcfg
+RTEMS_INITCFG_LEGACY_TAR ?= $(RTEMS_INITCFG_LEGACY_STAGING_ROOT).tar
 
 #--------------------------------------------------
 # Operating system compile & link flags
@@ -297,6 +306,8 @@ CLEANS += $(RTEMS_INITCFG_TAR) $(RTEMS_INITCFG_GEN_FILES)
 .PHONY: rtems-initcfg
 rtems-initcfg: $(RTEMS_INITCFG_TAR)
 
+$(RTEMS_INITCFG_GEN_FILES): $(RTEMS_INITCFG_GEN_DEPS)
+
 $(RTEMS_INITCFG_TAR): $(RTEMS_INITCFG_GEN_FILES) $(RTEMS_INITCFG_HOST_FILES)
 	@$(RM) -r $(RTEMS_INITCFG_STAGING_ROOT)
 	@$(MKDIR) $(RTEMS_INITCFG_STAGING_ROOT)
@@ -305,9 +316,18 @@ $(RTEMS_INITCFG_TAR): $(RTEMS_INITCFG_GEN_FILES) $(RTEMS_INITCFG_HOST_FILES)
 	    src=$${map%%:*}; \
 	    dst=$${map#*:}; \
 	    $(MKDIR) "$(RTEMS_INITCFG_STAGING_ROOT)$${dst%/*}"; \
-	    $(INSTALL) -m $(INSTALL_PERMISSIONS) "$$src" "$(RTEMS_INITCFG_STAGING_ROOT)$${dst%/*}"; \
+	    $(CP) "$$src" "$(RTEMS_INITCFG_STAGING_ROOT)$$dst"; \
+	    $(CHMOD) $(INSTALL_PERMISSIONS) "$(RTEMS_INITCFG_STAGING_ROOT)$$dst"; \
 	done
 	@cd $(RTEMS_INITCFG_STAGING_ROOT) && $(RTEMS_INITCFG_TAR_CMD) -cf "$(abspath $@)" .
+
+clean: rtems-initcfg-clean
+
+.PHONY: rtems-initcfg-clean
+rtems-initcfg-clean:
+	@$(RM) -r $(RTEMS_INITCFG_STAGING_ROOT) $(RTEMS_INITCFG_GEN_ROOT) \
+	    $(RTEMS_INITCFG_LEGACY_STAGING_ROOT) $(RTEMS_INITCFG_LEGACY_GEN_ROOT)
+	@$(RM) $(RTEMS_INITCFG_LEGACY_TAR)
 endif
 
 
